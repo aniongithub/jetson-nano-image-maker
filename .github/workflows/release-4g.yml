@@ -1,26 +1,20 @@
-name: CI
+name: Release
 
 on:
-  push:
+  release:
     branches: [main, master]
-  pull_request:
+    types: [edited, published]
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - board: jetson-nano
-            revision: 300
 
     env:
       JETSON_ROOTFS_DIR: /tmp/jetson-builder/rootfs
       JETSON_BUILD_DIR: /tmp/jetson-builder/build
-      JETSON_NANO_BOARD: ${{ matrix.board }}
-      JETSON_NANO_REVISION: ${{ matrix.revision }}
+      JETSON_NANO_BOARD: jetson-nano
+      JETSON_NANO_REVISION: 300
+
     steps:
       - uses: actions/checkout@v2
 
@@ -37,14 +31,18 @@ jobs:
           mkdir -p /tmp/jetson-builder/rootfs
           sudo tar --same-owner -xf rootfs.tar -C /tmp/jetson-builder/rootfs
 
-      - name: Create jetson.img
+      - name: Create jetson disk image
         run: |
           sudo apt install -y libxml2-utils
           sudo -E ./create-image.sh
 
-      - name: Upload image
-        uses: actions/upload-artifact@v2
+      - name: Make tarball
+        run: |
+          tar -czvf ${JETSON_NANO_BOARD}.tar.gz ${JETSON_NANO_BOARD}.img
+
+      - name: Publish binaries  
+        uses: skx/github-action-publish-binaries@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ matrix.board }}-r${{ matrix.revision }}
-          path: |
-            jetson.img
+          args: ${JETSON_NANO_BOARD}.tar.gz

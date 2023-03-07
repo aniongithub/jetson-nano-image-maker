@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  release:
+    branches: [main, master]
+    types: [edited, published]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    env:
+      JETSON_ROOTFS_DIR: /tmp/jetson-builder/rootfs
+      JETSON_BUILD_DIR: /tmp/jetson-builder/build
+      JETSON_NANO_BOARD: jetson-nano-2gb
+
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Build docker image
+        run: docker buildx build --platform linux/arm64 -t jetson-nano-image .
+
+      - name: Export rootfs
+        run: |
+          docker export $(docker create --name nano-rootfs --platform linux/arm64 jetson-nano-image) -o rootfs.tar
+          docker rm nano-rootfs
+          mkdir -p /tmp/jetson-builder/rootfs
+          sudo tar --same-owner -xf rootfs.tar -C /tmp/jetson-builder/rootfs
+
+      - name: Create jetson disk image
+        run: |
+          sudo apt install -y libxml2-utils
+          sudo -E ./create-image.sh
+
+      - name: Make tarball
+        run: |
+          tar -czvf ${JETSON_NANO_BOARD}.tar.gz ${JETSON_NANO_BOARD}.img
+
+      - name: Publish binaries  
+        uses: skx/github-action-publish-binaries@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${JETSON_NANO_BOARD}.tar.gz

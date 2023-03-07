@@ -64,7 +64,7 @@ case "$JETSON_NANO_BOARD" in
     jetson-nano-2gb)
         printf "Create image for Jetson nano 2GB board... "
         ROOTFS_DIR=$JETSON_ROOTFS_DIR $JETSON_BUILD_DIR/Linux_for_Tegra/tools/jetson-disk-image-creator.sh \
-            -o jetson.img -b jetson-nano-2gb-devkit
+            -o $JETSON_NANO_BOARD.img -b jetson-nano-2gb-devkit
         printf "[OK]\n"
         ;;
 
@@ -72,7 +72,7 @@ case "$JETSON_NANO_BOARD" in
         nano_board_revision=${JETSON_NANO_REVISION:=300}
         printf "Creating image for Jetson nano board (%s revision)... " $nano_board_revision
         ROOTFS_DIR=$JETSON_ROOTFS_DIR $JETSON_BUILD_DIR/Linux_for_Tegra/tools/jetson-disk-image-creator.sh \
-            -o jetson.img -b jetson-nano -r $nano_board_revision
+            -o $JETSON_NANO_BOARD.img -b jetson-nano -r $nano_board_revision
         printf "[OK]\n"
         ;;
 
@@ -83,4 +83,4 @@ case "$JETSON_NANO_BOARD" in
 esac
 
 printf "\e[32mImage created successfully\n"
-printf "Image location ./jetson.img\n"
+printf "Image location ./$JETSON_NANO_BOARD.img\n"
