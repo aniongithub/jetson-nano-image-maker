@@ -1,5 +1,7 @@
 FROM ubuntu:20.04 as base
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 RUN apt update
 RUN apt install -y ca-certificates
 

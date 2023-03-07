@@ -42,9 +42,29 @@ jobs:
         run: |
           tar -czvf ${JETSON_NANO_BOARD}.tar.gz ${JETSON_NANO_BOARD}.img
       
+      - name: Delete previous artifact
+        uses: actions/github-script@v6
+        id: artifact
+        with:
+          script: |
+            const res = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            })
+
+            res.data.artifacts
+              .filter(({ name }) => name === "${JETSON_NANO_BOARD}")
+              .forEach(({ id }) => {
+                github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: id,
+                })
+              })
+        
       - name: Upload image
         uses: actions/upload-artifact@v2
         with:
-          name: ${JETSON_NANO_BOARD}.tar.gz
+          name: ${{ env.JETSON_NANO_BOARD }}
           path: |
-            ${JETSON_NANO_BOARD}.tar.gz
+            ${{ env.JETSON_NANO_BOARD }}.tar.gz
