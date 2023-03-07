@@ -51,9 +51,8 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
             })
-
             res.data.artifacts
-              .filter(({ name }) => name === "${JETSON_NANO_BOARD}")
+              .filter(({ name }) => name === process.env.JETSON_NANO_BOARD)
               .forEach(({ id }) => {
                 github.rest.actions.deleteArtifact({
                   owner: context.repo.owner,
