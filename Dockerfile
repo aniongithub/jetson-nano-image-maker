@@ -2,22 +2,22 @@ FROM ubuntu:20.04 as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt update
-RUN apt install -y ca-certificates
+RUN apt-get update
+RUN apt-get install -y ca-certificates
 
-RUN apt install -y sudo
-RUN apt install -y ssh
-RUN apt install -y netplan.io
+RUN apt-get install -y sudo
+RUN apt-get install -y ssh
+RUN apt-get install -y netplan.io
 
 # resizerootfs
-RUN apt install -y udev
-RUN apt install -y parted
+RUN apt-get install -y udev
+RUN apt-get install -y parted
 
 # ifconfig
-RUN apt install -y net-tools
+RUN apt-get install -y net-tools
 
 # needed by knod-static-nodes to create a list of static device nodes
-RUN apt install -y kmod
+RUN apt-get install -y kmod
 
 # Install our resizerootfs service
 COPY root/etc/systemd/ /etc/systemd
@@ -32,13 +32,13 @@ RUN touch /opt/nvidia/l4t-packages/.nv-l4t-disable-boot-fw-update-in-preinstall
 
 COPY root/etc/apt/ /etc/apt
 COPY root/usr/share/keyrings /usr/share/keyrings
-RUN apt update
+RUN apt-get update
 
 # nv-l4t-usb-device-mode
-RUN apt install -y bridge-utils
+RUN apt-get install -y bridge-utils
 
 # https://docs.nvidia.com/jetson/l4t/index.html#page/Tegra%20Linux%20Driver%20Package%20Development%20Guide/updating_jetson_and_host.html
-RUN apt install -y -o Dpkg::Options::="--force-overwrite" \
+RUN apt-get install -y -o Dpkg::Options::="--force-overwrite" \
     nvidia-l4t-core \
     nvidia-l4t-init \
     nvidia-l4t-bootloader \

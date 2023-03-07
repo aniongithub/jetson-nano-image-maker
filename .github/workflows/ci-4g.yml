@@ -42,7 +42,7 @@ jobs:
         run: |
           tar -czvf ${JETSON_NANO_BOARD}.tar.gz ${JETSON_NANO_BOARD}.img
       
-      - name: Delete previous artifact
+      - name: Delete previous CI artifact
         uses: actions/github-script@v6
         id: artifact
         with:
