@@ -1,0 +1,54 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq libxml2-utils shellcheck
+
+      - name: Validate boards.json
+        run: jq . boards.json > /dev/null
+
+      - name: Shellcheck scripts
+        run: shellcheck create-image.sh build-rootfs.sh boards.sh || true
+
+      - name: Syntax check
+        run: |
+          bash -n create-image.sh
+          bash -n build-rootfs.sh
+          bash -n boards.sh
+
+  build-images:
+    runs-on: ubuntu-latest
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          - jetson-nano
+          - jetson-nano-2gb
+          - jetson-orin-nano
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq qemu-user-static libxml2-utils xmlstarlet
+
+      - name: Build image for ${{ matrix.board }}
+        run: |
+          time sudo ./create-image.sh -b ${{ matrix.board }}
+
+      - name: Report image size
+        run: ls -lh ${{ matrix.board }}.img

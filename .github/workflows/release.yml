@@ -1,0 +1,38 @@
+name: Release Build
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          - jetson-nano
+          - jetson-nano-2gb
+          - jetson-orin-nano
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq qemu-user-static libxml2-utils xmlstarlet
+
+      - name: Build image for ${{ matrix.board }}
+        run: |
+          sudo ./create-image.sh -b ${{ matrix.board }}
+
+      - name: Compress image
+        run: xz -9 -T0 "${{ matrix.board }}.img"
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.board }}.img.xz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

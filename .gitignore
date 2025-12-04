@@ -1,0 +1,4 @@
+jetson-build/
+jetson-image/
+*.img
+*log
