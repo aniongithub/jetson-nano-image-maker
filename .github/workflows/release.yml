@@ -1,0 +1,51 @@
+name: Release Build
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          - jetson-nano
+          - jetson-nano-2gb
+          - jetson-orin-nano
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq qemu-user-static libxml2-utils
+
+      - name: Build image for ${{ matrix.board }}
+        run: |
+          sudo ./create-image.sh -b ${{ matrix.board }}
+
+      - name: Find output image
+        id: find-image
+        run: |
+          IMG=$(find build -name '*.img' | head -n1)
+          echo "img=$IMG" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$IMG")" >> "$GITHUB_OUTPUT"
+
+      - name: Compress image
+        run: |
+          xz -9 -T0 "${{ steps.find-image.outputs.img }}"
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.find-image.outputs.img }}.xz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,104 @@
+{
+  "boards": {
+    "jetson-nano": {
+      "default_ubuntu": "20.04",
+      "requires_device": false,
+      "default_device": "SD",
+      "disk_ids": {
+        "32": "jetson-nano"
+      },
+      "candidates": ["jetson-nano", "jetson-nano-devkit"],
+      "l4t_default_for": { "20.04": "32" },
+      "ubuntu_default_for": { "32": "20.04" },
+      "supported_combos": ["20.04 -> 32"],
+      "bsp": { "32": "https://developer.nvidia.com/embedded/l4t/r32_release_v6.1/t210/jetson-210_linux_r32.6.1_aarch64.tbz2" }
+    },
+
+    "jetson-nano-2gb": {
+      "default_ubuntu": "20.04",
+      "requires_device": false,
+      "default_device": "SD",
+      "disk_ids": {
+        "32": "jetson-nano-2gb"
+      },
+      "candidates": ["jetson-nano-2gb", "jetson-nano-2gb-devkit"],
+      "l4t_default_for": { "20.04": "32" },
+      "ubuntu_default_for": { "32": "20.04" },
+      "supported_combos": ["20.04 -> 32"],
+      "bsp": { "32": "https://developer.nvidia.com/embedded/l4t/r32_release_v6.1/t210/jetson-210_linux_r32.6.1_aarch64.tbz2" }
+    },
+
+    "jetson-orin-nano": {
+      "default_ubuntu": "24.04",
+      "requires_device": true,
+      "default_device": "SD",
+      "disk_ids": {
+        "35": "jetson-orin-nano-devkit",
+        "36": "jetson-orin-nano"
+      },
+      "candidates": ["jetson-orin-nano", "jetson-orin-nano-devkit"],
+      "l4t_default_for": { "22.04": "35", "24.04": "36" },
+      "ubuntu_default_for": { "35": "22.04", "36": "24.04" },
+      "supported_combos": ["22.04 -> 35", "24.04 -> 36"],
+      "bsp": {
+        "35": "https://developer.nvidia.com/downloads/embedded/l4t/r35_release_v6.2/release/jetson_linux_r35.6.2_aarch64.tbz2",
+        "36": "https://developer.nvidia.com/downloads/embedded/l4t/r36_release_v4.4/release/Jetson_Linux_r36.4.4_aarch64.tbz2"
+      }
+    },
+
+    "jetson-agx-orin": {
+      "default_ubuntu": "24.04",
+      "requires_device": true,
+      "default_device": "USB",
+      "boardsku": "0000",
+      "disk_ids": {
+        "35": "jetson-agx-orin-devkit",
+        "36": "jetson-agx-orin-devkit"
+      },
+      "candidates": ["jetson-agx-orin", "jetson-agx-orin-devkit"],
+      "l4t_default_for": { "22.04": "35", "24.04": "36" },
+      "ubuntu_default_for": { "35": "22.04", "36": "24.04" },
+      "supported_combos": ["22.04 -> 35", "24.04 -> 36"],
+      "bsp": {
+        "35": "https://developer.nvidia.com/downloads/embedded/l4t/r35_release_v6.2/release/jetson_linux_r35.6.2_aarch64.tbz2",
+        "36": "https://developer.nvidia.com/downloads/embedded/l4t/r36_release_v4.4/release/Jetson_Linux_r36.4.4_aarch64.tbz2"
+      }
+    },
+
+    "jetson-agx-xavier": {
+      "default_ubuntu": "22.04",
+      "requires_device": true,
+      "default_device": "EMMC",
+      "disk_ids": {
+        "32": "jetson-agx-xavier-devkit",
+        "35": "jetson-agx-xavier"
+      },
+      "candidates": ["jetson-agx-xavier", "jetson-agx-xavier-devkit"],
+      "l4t_default_for": { "20.04": "32", "22.04": "35" },
+      "ubuntu_default_for": { "32": "20.04", "35": "22.04" },
+      "supported_combos": ["20.04 -> 32", "22.04 -> 35"],
+      "bsp": {
+        "32": "https://developer.nvidia.com/downloads/embedded/l4t/r32_release_v7.6/t210/jetson-210_linux_r32.7.6_aarch64.tbz2",
+        "35": "https://developer.nvidia.com/downloads/embedded/l4t/r35_release_v6.2/release/jetson_linux_r35.6.2_aarch64.tbz2"
+      }
+    },
+
+    "jetson-xavier-nx": {
+      "default_ubuntu": "22.04",
+      "requires_device": true,
+      "default_device": "EMMC",
+      "disk_ids": {
+        "32": "jetson-xavier-nx-devkit",
+        "35": "jetson-xavier-nx"
+      },
+      "candidates": ["jetson-xavier-nx", "jetson-xavier-nx-devkit"],
+      "l4t_default_for": { "20.04": "32", "22.04": "35" },
+      "ubuntu_default_for": { "32": "20.04", "35": "22.04" },
+      "supported_combos": ["20.04 -> 32", "22.04 -> 35"],
+      "bsp": {
+        "32": "https://developer.nvidia.com/downloads/embedded/l4t/r32_release_v7.6/t210/jetson-210_linux_r32.7.6_aarch64.tbz2",
+        "35": "https://developer.nvidia.com/downloads/embedded/l4t/r35_release_v6.2/release/jetson_linux_r35.6.2_aarch64.tbz2"
+      }
+    }
+  }
+}
