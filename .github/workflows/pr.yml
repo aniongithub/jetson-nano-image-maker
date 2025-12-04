@@ -49,6 +49,7 @@ jobs:
       - name: Build image for ${{ matrix.board }}
         run: |
           time sudo ./create-image.sh -b ${{ matrix.board }}
+          sudo chown $USER "${{ matrix.board }}.img"
 
       - name: Report image size
         run: ls -lh ${{ matrix.board }}.img

@@ -26,6 +26,7 @@ jobs:
       - name: Build image for ${{ matrix.board }}
         run: |
           sudo ./create-image.sh -b ${{ matrix.board }}
+          sudo chown $USER "${{ matrix.board }}.img"
 
       - name: Compress image
         run: xz -9 -T0 "${{ matrix.board }}.img"
