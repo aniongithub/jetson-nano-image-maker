@@ -32,20 +32,12 @@ jobs:
         run: |
           sudo ./create-image.sh -b ${{ matrix.board }}
 
-      - name: Find output image
-        id: find-image
-        run: |
-          IMG=$(find build -name '*.img' | head -n1)
-          echo "img=$IMG" >> "$GITHUB_OUTPUT"
-          echo "name=$(basename "$IMG")" >> "$GITHUB_OUTPUT"
-
       - name: Compress image
-        run: |
-          xz -9 -T0 "${{ steps.find-image.outputs.img }}"
+        run: xz -9 -T0 "${{ matrix.board }}.img"
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.find-image.outputs.img }}.xz
+          files: ${{ matrix.board }}.img.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

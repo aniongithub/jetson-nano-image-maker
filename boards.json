@@ -19,7 +19,7 @@
       "requires_device": false,
       "default_device": "SD",
       "disk_ids": {
-        "32": "jetson-nano-2gb"
+        "32": "jetson-nano-2gb-devkit"
       },
       "candidates": ["jetson-nano-2gb", "jetson-nano-2gb-devkit"],
       "l4t_default_for": { "20.04": "32" },
@@ -34,7 +34,7 @@
       "default_device": "SD",
       "disk_ids": {
         "35": "jetson-orin-nano-devkit",
-        "36": "jetson-orin-nano"
+        "36": "jetson-orin-nano-devkit"
       },
       "candidates": ["jetson-orin-nano", "jetson-orin-nano-devkit"],
       "l4t_default_for": { "22.04": "35", "24.04": "36" },

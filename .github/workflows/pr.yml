@@ -56,5 +56,4 @@ jobs:
           time sudo ./create-image.sh -b ${{ matrix.board }}
 
       - name: Report image size
-        run: |
-          find build -name '*.img' -exec ls -lh {} \;
+        run: ls -lh ${{ matrix.board }}.img
