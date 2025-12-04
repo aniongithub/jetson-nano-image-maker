@@ -23,13 +23,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq qemu-user-static libxml2-utils xmlstarlet
 
-      - name: Build image for ${{ matrix.board }}
+      - name: Build and compress image for ${{ matrix.board }}
         run: |
           sudo ./create-image.sh -b ${{ matrix.board }}
-          sudo chown $USER "${{ matrix.board }}.img"
-
-      - name: Compress image
-        run: xz -9 -T0 "${{ matrix.board }}.img"
+          sudo xz -9 -T0 "${{ matrix.board }}.img"
+          sudo chown $USER "${{ matrix.board }}.img.xz"
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
