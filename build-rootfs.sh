@@ -32,6 +32,24 @@ fi
 # Ubuntu versions, adjust or add Dockerfiles accordingly.
 echo "Using builder: ${BUILDER}"
 
+# Jetson boards are aarch64, so the rootfs must be built for arm64 regardless of
+# the host arch. Building natively on an amd64 runner would produce an unbootable
+# amd64 rootfs and also breaks apt (the arm64-only ubuntu-ports source 404s for
+# binary-amd64, and the nvidia-l4t-* packages are arm64). Override with
+# TARGET_PLATFORM if needed.
+TARGET_PLATFORM="${TARGET_PLATFORM:-linux/arm64}"
+echo "Building for platform: ${TARGET_PLATFORM}"
+
+# Ensure QEMU binfmt handlers are registered so the arm64 build can run under
+# emulation on an amd64 host. Best-effort: the host may already have them (e.g.
+# via the qemu-user-static package) and local users may lack privileges.
+if [ "${BUILDER}" = "docker" ]; then
+  # --platform requires BuildKit; enable it explicitly for older docker defaults.
+  export DOCKER_BUILDKIT=1
+  docker run --privileged --rm tonistiigi/binfmt --install arm64 >/dev/null 2>&1 \
+    || echo "Note: could not register QEMU binfmt via tonistiigi/binfmt; assuming host already provides it"
+fi
+
 # Allow selecting the base Ubuntu image via build-arg
 BASE_IMAGE="ubuntu:${UBUNTU_VERSION}"
 echo "Building image with BASE_IMAGE=${BASE_IMAGE}"
@@ -65,12 +83,13 @@ else
 fi
 
 ${BUILDER} build \
+  --platform "${TARGET_PLATFORM}" \
   --build-arg BASE_IMAGE="${BASE_IMAGE}" \
   --build-arg SKIP_BIONIC_APT="${SKIP_BIONIC_APT}" \
   --build-arg INSTALL_L4T="${INSTALL_L4T}" \
   -t "${BUILD_TAG}" .
 
-tmpcid=$(${BUILDER} create "${BUILD_TAG}")
+tmpcid=$(${BUILDER} create --platform "${TARGET_PLATFORM}" "${BUILD_TAG}")
 echo "Ensuring output directory exists: ${OUT_DIR}"
 if ! mkdir -p "${OUT_DIR}" 2>/dev/null; then
   echo "Failed to create ${OUT_DIR}. Try running with sudo or set JETSON_ROOTFS_CACHE_DIR to a writable path." >&2
