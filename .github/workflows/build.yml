@@ -53,11 +53,13 @@ jobs:
       - name: Build image for ${{ matrix.board }}
         run: |
           time sudo ./create-image.sh -b ${{ matrix.board }}
-          sudo chown "$USER" "${{ matrix.board }}.img"
+          sudo chown "$USER:$USER" "${{ matrix.board }}.img"
 
       - name: Compress image
         if: ${{ inputs.compress }}
-        run: xz -9 -T0 "${{ matrix.board }}.img"
+        run: |
+          sudo xz -9 -T0 "${{ matrix.board }}.img"
+          sudo chown "$USER:$USER" "${{ matrix.board }}.img.xz"
 
       - name: Report image size
         run: ls -lh ${{ matrix.board }}.img*
