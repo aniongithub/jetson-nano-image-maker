@@ -1,0 +1,70 @@
+name: Manual Image Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      board:
+        description: Board to build
+        type: choice
+        required: true
+        default: all
+        options:
+          - all
+          - jetson-nano
+          - jetson-nano-2gb
+          - jetson-orin-nano
+      compress:
+        description: Compress the image with xz before uploading
+        type: boolean
+        required: false
+        default: true
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - name: Select boards
+        id: select
+        run: |
+          if [ "${{ inputs.board }}" = "all" ]; then
+            matrix='["jetson-nano","jetson-nano-2gb","jetson-orin-nano"]'
+          else
+            matrix='["${{ inputs.board }}"]'
+          fi
+          echo "matrix={\"board\":$matrix}" >> "$GITHUB_OUTPUT"
+
+  build-images:
+    runs-on: ubuntu-latest
+    needs: setup
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq qemu-user-static libxml2-utils xmlstarlet
+
+      - name: Build image for ${{ matrix.board }}
+        run: |
+          time sudo ./create-image.sh -b ${{ matrix.board }}
+          sudo chown "$USER" "${{ matrix.board }}.img"
+
+      - name: Compress image
+        if: ${{ inputs.compress }}
+        run: xz -9 -T0 "${{ matrix.board }}.img"
+
+      - name: Report image size
+        run: ls -lh ${{ matrix.board }}.img*
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.board }}
+          path: ${{ matrix.board }}.img*
+          if-no-files-found: error
