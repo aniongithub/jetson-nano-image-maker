@@ -111,8 +111,8 @@ l4t_latest_for() {
       ;;
 
     jetson-orin-nano|jetson-agx-orin)
-      if [ "$ubuntu" = "24.04" ]; then echo "36";
-      elif [ "$ubuntu" = "22.04" ]; then echo "35";
+      if [ "$ubuntu" = "22.04" ]; then echo "36";
+      elif [ "$ubuntu" = "20.04" ]; then echo "35";
       else echo ""; fi
       ;;
 
@@ -133,5 +133,21 @@ bsp_default_for() {
     echo ""; return 0
   fi
   jq -r --arg b "$board" --arg l "$l4t" '.boards[$b].bsp[$l] // empty' "$JSON_PATH" 2>/dev/null || true
+}
+
+# l4t_apt_field_for <board> <l4t_major> <field>
+# Returns a single field (soc|release|needs_bionic) from the board's `l4t_apt`
+# entry for the given L4T major, or empty if not defined. This is the single
+# source of truth (boards.json) for whether/how to install the NVIDIA L4T
+# packages: when both `soc` and `release` are present the rootfs build installs
+# L4T from the matching NVIDIA apt repo; otherwise the L4T install is skipped.
+l4t_apt_field_for() {
+  local board="$1" l4t="$2" field="$3"
+  JSON_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/boards.json"
+  if ! command -v jq >/dev/null 2>&1 || [ ! -f "$JSON_PATH" ]; then
+    echo ""; return 0
+  fi
+  jq -r --arg b "$board" --arg l "$l4t" --arg f "$field" \
+    '.boards[$b].l4t_apt[$l][$f] // empty' "$JSON_PATH" 2>/dev/null || true
 }
 

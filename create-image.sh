@@ -70,6 +70,32 @@ fi
 # Apply Ubuntu default early so rootfs cache/build uses the correct path
 UBUNTU=${UBUNTU:-$board_default_ubuntu}
 
+# Resolve the L4T major early (before building the rootfs) so the rootfs embeds
+# the correct board/L4T NVIDIA apt source. Precedence: CLI -l > newest
+# compatible for the Ubuntu base > board default for the Ubuntu base.
+if [ -z "${L4T:-}" ]; then
+    L4T=$(l4t_latest_for "$BOARD" "$UBUNTU" || true)
+fi
+L4T=${L4T:-$(l4t_default_for "$BOARD" "$UBUNTU")}
+
+# Resolve the NVIDIA L4T apt coordinates for this board + L4T from boards.json
+# (board.l4t_apt). These are the single source of truth for whether/how
+# build-rootfs.sh installs the L4T packages. When absent, the rootfs is built
+# without L4T (no bootable kernel) — only valid for boards not yet wired up.
+L4T_SOC=$(l4t_apt_field_for "$BOARD" "$L4T" soc || true)
+L4T_RELEASE=$(l4t_apt_field_for "$BOARD" "$L4T" release || true)
+L4T_NEEDS_BIONIC=$(l4t_apt_field_for "$BOARD" "$L4T" needs_bionic || true)
+case "$L4T_NEEDS_BIONIC" in
+    true|1) NEEDS_BIONIC=1 ;;
+    *)      NEEDS_BIONIC=0 ;;
+esac
+if [ -n "$L4T_SOC" ] && [ -n "$L4T_RELEASE" ]; then
+    INSTALL_L4T=true
+else
+    INSTALL_L4T=false
+fi
+export L4T_SOC L4T_RELEASE NEEDS_BIONIC INSTALL_L4T
+
 # apply defaults from metadata (board_metadata sets `board_default_ubuntu` and `REQUIRES_DEVICE`)
 REQUIRES_DEVICE=${REQUIRES_DEVICE:-no}
 if [ -z "${DEVICE:-}" ]; then
@@ -88,7 +114,7 @@ fi
 if [ -n "${JETSON_ROOTFS_DIR:-}" ]; then
     echo "Using provided JETSON_ROOTFS_DIR=${JETSON_ROOTFS_DIR}"
 else
-    ROOTFS_OUT_DIR="/var/cache/jetson-rootfs/rootfs-${UBUNTU}"
+    ROOTFS_OUT_DIR="/var/cache/jetson-rootfs/rootfs-${UBUNTU}-l4t${L4T}"
     echo "JETSON_ROOTFS_DIR not set; checking default cache at ${ROOTFS_OUT_DIR}"
     if [ ! -d "$ROOTFS_OUT_DIR" ] || [ -z "$(ls -A "$ROOTFS_OUT_DIR")" ]; then
         echo "Cache missing or empty; building rootfs via build-rootfs.sh -> ${ROOTFS_OUT_DIR}"
@@ -106,13 +132,6 @@ fi
 # Prepare build dir
 JETSON_BUILD_DIR="${JETSON_BUILD_DIR:-$(pwd)/jetson-build}"
 mkdir -p "$JETSON_BUILD_DIR"
-
-# Resolve Ubuntu default from metadata, then pick the latest compatible L4T when not provided
-UBUNTU=${UBUNTU:-$board_default_ubuntu}
-if [ -z "${L4T:-}" ]; then
-    L4T=$(l4t_latest_for "$BOARD" "$UBUNTU" || true)
-fi
-L4T=${L4T:-$(l4t_default_for "$BOARD" "$UBUNTU")}
 
 # Determine BSP: precedence: CLI --bsp > per-board default mapping (bsp_default_for) > error
 if [ -n "$BSP" ]; then
