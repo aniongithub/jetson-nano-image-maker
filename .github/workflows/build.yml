@@ -70,3 +70,4 @@ jobs:
           name: ${{ matrix.board }}
           path: ${{ matrix.board }}.img*
           if-no-files-found: error
+          retention-days: 7
