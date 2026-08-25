@@ -74,6 +74,14 @@ if [ -z "${INSTALL_L4T:-}" ]; then
 fi
 echo "INSTALL_L4T=${INSTALL_L4T} L4T_SOC=${L4T_SOC:-<none>} L4T_RELEASE=${L4T_RELEASE:-<none>}"
 
+# Whether to install the Docker engine + NVIDIA container runtime into the
+# rootfs, and the L4T major used to pick the correct per-era package set
+# (r32 vs r36). Driven by boards.json (board.features.container_runtime) via
+# create-image.sh; defaults off when building standalone.
+INSTALL_CONTAINER_RUNTIME="${INSTALL_CONTAINER_RUNTIME:-false}"
+L4T_MAJOR="${L4T_MAJOR:-}"
+echo "INSTALL_CONTAINER_RUNTIME=${INSTALL_CONTAINER_RUNTIME} L4T_MAJOR=${L4T_MAJOR:-<none>}"
+
 # Some L4T releases (r32.x) depend on libffi6, which only ships in bionic
 # (18.04). Keep the bundled bionic apt source when the board requires it and the
 # base isn't already 18.04; otherwise drop it (newer releases use libffi7/8 from
@@ -93,6 +101,8 @@ ${BUILDER} build \
   --build-arg INSTALL_L4T="${INSTALL_L4T}" \
   --build-arg L4T_SOC="${L4T_SOC}" \
   --build-arg L4T_RELEASE="${L4T_RELEASE}" \
+  --build-arg INSTALL_CONTAINER_RUNTIME="${INSTALL_CONTAINER_RUNTIME}" \
+  --build-arg L4T_MAJOR="${L4T_MAJOR}" \
   -t "${BUILD_TAG}" .
 
 tmpcid=$(${BUILDER} create --platform "${TARGET_PLATFORM}" "${BUILD_TAG}")

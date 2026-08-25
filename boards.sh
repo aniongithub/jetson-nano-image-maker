@@ -135,6 +135,27 @@ bsp_default_for() {
   jq -r --arg b "$board" --arg l "$l4t" '.boards[$b].bsp[$l] // empty' "$JSON_PATH" 2>/dev/null || true
 }
 
+# feature_for <board> <feature> [default]
+# Returns "true"/"false" for a boolean flag under the board's `features` object
+# in boards.json (e.g. features.container_runtime). When the feature key is
+# absent, returns the provided default (default: "false"). This is the single
+# source of truth for optional, opt-out-able rootfs features.
+feature_for() {
+  local board="$1" feature="$2" default="${3:-false}"
+  JSON_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/boards.json"
+  if ! command -v jq >/dev/null 2>&1 || [ ! -f "$JSON_PATH" ]; then
+    echo "$default"; return 0
+  fi
+  local val
+  val=$(jq -r --arg b "$board" --arg f "$feature" \
+    '.boards[$b].features[$f] // empty' "$JSON_PATH" 2>/dev/null || true)
+  case "$val" in
+    true|True|1)  echo "true" ;;
+    false|False|0) echo "false" ;;
+    *)            echo "$default" ;;
+  esac
+}
+
 # l4t_apt_field_for <board> <l4t_major> <field>
 # Returns a single field (soc|release|needs_bionic) from the board's `l4t_apt`
 # entry for the given L4T major, or empty if not defined. This is the single

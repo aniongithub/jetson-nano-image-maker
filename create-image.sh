@@ -17,7 +17,7 @@ fi
 
 usage() {
     cat <<EOF
-Usage: $0 -b <board> [-l <l4t>] [-r <revision>] [-d <SD|USB>] [-u <ubuntu>] [-o <outdir>] [--bsp <bsp_url>]
+Usage: $0 -b <board> [-l <l4t>] [-r <revision>] [-d <SD|USB>] [-u <ubuntu>] [-o <outdir>] [--bsp <bsp_url>] [--no-container-runtime]
 
 Supported boards: jetson-nano, jetson-nano-2gb, jetson-orin-nano, jetson-agx-orin, jetson-agx-xavier, jetson-xavier-nx
 Example: $0 -b jetson-orin-nano -d SD -l 36 -u 24.04
@@ -33,6 +33,7 @@ DEVICE=""
 UBUNTU=""
 OUTDIR="."
 BSP=""
+NO_CONTAINER_RUNTIME=0
 
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -50,6 +51,8 @@ while [[ "$#" -gt 0 ]]; do
             OUTDIR="$2"; shift 2;;
         --bsp)
             BSP="$2"; shift 2;;
+        --no-container-runtime)
+            NO_CONTAINER_RUNTIME=1; shift;;
         -h|--help)
             usage;;
         *)
@@ -96,6 +99,22 @@ else
 fi
 export L4T_SOC L4T_RELEASE NEEDS_BIONIC INSTALL_L4T
 
+# Resolve the container runtime feature (Docker engine + NVIDIA container
+# runtime) from boards.json (board.features.container_runtime), defaulting on.
+# It is only meaningful for L4T builds (the NVIDIA runtime needs the L4T stack),
+# and can be forced off per-build with --no-container-runtime for a minimal
+# image. L4T_MAJOR is passed through so the Dockerfile can pick the right
+# per-era package set (r32 vs r36).
+L4T_MAJOR="$L4T"
+if [ "$INSTALL_L4T" = "true" ] && [ "$NO_CONTAINER_RUNTIME" != "1" ] \
+    && [ "$(feature_for "$BOARD" container_runtime true)" = "true" ]; then
+    INSTALL_CONTAINER_RUNTIME=true
+else
+    INSTALL_CONTAINER_RUNTIME=false
+fi
+export L4T_MAJOR INSTALL_CONTAINER_RUNTIME
+echo "INSTALL_CONTAINER_RUNTIME=${INSTALL_CONTAINER_RUNTIME}"
+
 # apply defaults from metadata (board_metadata sets `board_default_ubuntu` and `REQUIRES_DEVICE`)
 REQUIRES_DEVICE=${REQUIRES_DEVICE:-no}
 if [ -z "${DEVICE:-}" ]; then
@@ -115,6 +134,9 @@ if [ -n "${JETSON_ROOTFS_DIR:-}" ]; then
     echo "Using provided JETSON_ROOTFS_DIR=${JETSON_ROOTFS_DIR}"
 else
     ROOTFS_OUT_DIR="/var/cache/jetson-rootfs/rootfs-${UBUNTU}-l4t${L4T}"
+    if [ "$INSTALL_CONTAINER_RUNTIME" = "true" ]; then
+        ROOTFS_OUT_DIR="${ROOTFS_OUT_DIR}-docker"
+    fi
     echo "JETSON_ROOTFS_DIR not set; checking default cache at ${ROOTFS_OUT_DIR}"
     if [ ! -d "$ROOTFS_OUT_DIR" ] || [ -z "$(ls -A "$ROOTFS_OUT_DIR")" ]; then
         echo "Cache missing or empty; building rootfs via build-rootfs.sh -> ${ROOTFS_OUT_DIR}"

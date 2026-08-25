@@ -14,6 +14,7 @@
       "l4t_apt": {
         "32": { "soc": "t210", "release": "r32.6", "needs_bionic": true }
       },
+      "features": { "container_runtime": true },
       "bsp": { "32": "https://developer.nvidia.com/embedded/l4t/r32_release_v6.1/t210/jetson-210_linux_r32.6.1_aarch64.tbz2" }
     },
 
@@ -31,6 +32,7 @@
       "l4t_apt": {
         "32": { "soc": "t210", "release": "r32.6", "needs_bionic": true }
       },
+      "features": { "container_runtime": true },
       "bsp": { "32": "https://developer.nvidia.com/embedded/l4t/r32_release_v6.1/t210/jetson-210_linux_r32.6.1_aarch64.tbz2" }
     },
 
@@ -49,6 +51,7 @@
       "l4t_apt": {
         "36": { "soc": "t234", "release": "r36.4", "needs_bionic": false }
       },
+      "features": { "container_runtime": true },
       "bsp": {
         "35": "https://developer.nvidia.com/downloads/embedded/l4t/r35_release_v6.2/release/jetson_linux_r35.6.2_aarch64.tbz2",
         "36": "https://developer.nvidia.com/downloads/embedded/l4t/r36_release_v4.4/release/Jetson_Linux_r36.4.4_aarch64.tbz2"
