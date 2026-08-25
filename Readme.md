@@ -55,11 +55,21 @@ flowchart TD
     F --> G[board.img]
 ```
 
-- **[`boards.json`](./boards.json)** describes every board: default Ubuntu release, L4T major, boot device, disk-image IDs, the L4T apt coordinates (`l4t_apt`), and the BSP tarball URL. It is the single source of truth read by all the scripts.
+- **[`boards.json`](./boards.json)** describes every board: default Ubuntu release, L4T major, boot device, disk-image IDs, the L4T apt coordinates (`l4t_apt`), optional `features` (e.g. the container runtime), and the BSP tarball URL. It is the single source of truth read by all the scripts.
 - **[`build-rootfs.sh`](./build-rootfs.sh)** + **[`Dockerfile`](./Dockerfile)** build the arm64 root filesystem in a container using `qemu-user-static`/binfmt. The Dockerfile generates the NVIDIA L4T apt source from the `l4t_apt` coordinates and installs the L4T kernel, device trees, and userspace packages.
 - **[`create-image.sh`](./create-image.sh)** ties it together: it resolves the board's parameters, ensures the rootfs is built (cached under `/var/cache/jetson-rootfs`), downloads the matching NVIDIA BSP, populates `Linux_for_Tegra/rootfs`, and runs NVIDIA's `jetson-disk-image-creator.sh` to produce the final `.img`.
 
 > **L4T r36 note:** the `nvidia-l4t-initrd` package registers a dpkg trigger (`nv-update-initrd`) that needs a BSP-only LUKS helper absent from the apt repo. For these unencrypted images the Dockerfile temporarily `dpkg-divert`s that binary to a no-op during install and restores it afterward, using the prebuilt `/boot/initrd` the package already ships. This is a no-op on r32 (Nano).
+
+## Docker & GPU containers
+
+The bootable images ship with **Docker** and the **NVIDIA container runtime** preinstalled and configured, so GPU-accelerated containers work out of the box — no manual `nvidia-container-toolkit` setup:
+
+- Docker's `default-runtime` is set to `nvidia`, so `docker build` and `docker run` see the GPU by default (matching NVIDIA's own Jetson images).
+- The `jetson` user is in the `docker` group, so no `sudo` is needed.
+- The correct per-era packages are used automatically: `docker.io` + `nvidia-container-toolkit` (+ `nvidia-container-runtime` on L4T r32), all from apt sources the image already trusts.
+
+This is controlled by the per-board `features.container_runtime` flag in [`boards.json`](./boards.json) (defaults **on** for the three bootable boards). To build a lean image without it, either flip that flag to `false` or pass `--no-container-runtime` to `create-image.sh`.
 
 ## Building locally
 
@@ -88,8 +98,9 @@ The result is `<board>.img` in the current directory. Compress it with `xz -9 -T
 | `-u, --ubuntu` | Ubuntu base release (e.g. `20.04`, `22.04`) | per-board default |
 | `-o, --outdir` | Output directory for the image | `.` |
 | `--bsp` | Override the NVIDIA BSP tarball URL | from `boards.json` |
+| `--no-container-runtime` | Skip Docker + NVIDIA container runtime for a minimal image | container runtime on (per `boards.json`) |
 
-Rootfs builds are cached per Ubuntu + L4T combination at `/var/cache/jetson-rootfs/rootfs-<ubuntu>-l4t<l4t>`. Export `JETSON_ROOTFS_DIR` to point at your own.
+Rootfs builds are cached per Ubuntu + L4T combination at `/var/cache/jetson-rootfs/rootfs-<ubuntu>-l4t<l4t>` (with a `-docker` suffix when the container runtime is included). Export `JETSON_ROOTFS_DIR` to point at your own.
 
 ## Continuous integration
 
@@ -111,6 +122,7 @@ Boards are data, not code. To wire up a new board (or fix an existing one):
    - `default_ubuntu`, `default_device`, `requires_device`
    - `disk_ids` — maps L4T major → the disk-image ID passed to `jetson-disk-image-creator.sh`
    - `l4t_apt` — `{ soc, release, needs_bionic }` per L4T major. **This is what makes a build bootable**; without it the rootfs has no NVIDIA kernel.
+   - `features` — optional per-board toggles, e.g. `{ "container_runtime": true }` to bake in Docker + the NVIDIA container runtime (defaults on for bootable boards)
    - `bsp` — the NVIDIA BSP tarball URL per L4T major
 2. Build locally (`sudo ./create-image.sh -b <board>`) and, ideally, verify on real hardware.
 3. Add the board to the CI matrices in the workflows if it should be built automatically.

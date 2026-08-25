@@ -9,6 +9,10 @@ ARG SKIP_BIONIC_APT=0
 # L4T_RELEASE is the apt release/suite (e.g. r32.6, r36.4).
 ARG L4T_SOC=""
 ARG L4T_RELEASE=""
+# Whether to install the Docker engine + NVIDIA container runtime, and the L4T
+# major (e.g. 32, 36) used to select the correct per-era container package set.
+ARG INSTALL_CONTAINER_RUNTIME=false
+ARG L4T_MAJOR=""
 
 RUN apt-get update
 RUN apt-get install -y ca-certificates
@@ -98,9 +102,35 @@ RUN if [ "$INSTALL_L4T" = "true" ] ; then \
 
 RUN rm -rf /opt/nvidia/l4t-packages
 
+# Optionally install the Docker engine (from Ubuntu) plus the NVIDIA container
+# runtime (from the L4T apt repo configured above), and set Docker's default
+# runtime to nvidia so `docker build`/`run` see the GPU by default — matching
+# NVIDIA's own Jetson images. The package set differs by L4T era:
+#   r32 (JetPack 4): docker.io + nvidia-container-toolkit + nvidia-container-runtime
+#   r36 (JetPack 6): docker.io + nvidia-container-toolkit (runtime ships in -base)
+# Both provide /usr/bin/nvidia-container-runtime, so one daemon.json fits both.
+# A temporary policy-rc.d stops package postinsts from starting daemons inside
+# the build container. Driven by boards.json (board.features.container_runtime).
+RUN if [ "$INSTALL_CONTAINER_RUNTIME" = "true" ]; then \
+        printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && chmod +x /usr/sbin/policy-rc.d && \
+        NV_CONTAINER_PKGS="nvidia-container-toolkit" && \
+        if [ "$L4T_MAJOR" = "32" ]; then NV_CONTAINER_PKGS="nvidia-container-toolkit nvidia-container-runtime"; fi && \
+        apt-get install -y --no-install-recommends docker.io $NV_CONTAINER_PKGS && \
+        mkdir -p /etc/docker && \
+        printf '{\n  "runtimes": {\n    "nvidia": {\n      "path": "nvidia-container-runtime",\n      "runtimeArgs": []\n    }\n  },\n  "default-runtime": "nvidia"\n}\n' > /etc/docker/daemon.json && \
+        systemctl enable docker && \
+        rm -f /usr/sbin/policy-rc.d ; \
+    else \
+        echo "Skipping container runtime install (INSTALL_CONTAINER_RUNTIME=${INSTALL_CONTAINER_RUNTIME})" ; \
+    fi
+
 COPY root/ /
 
 RUN useradd -ms /bin/bash jetson
 RUN echo 'jetson:jetson' | chpasswd
 
 RUN usermod -a -G sudo jetson
+
+# When the container runtime is installed, let the default user drive Docker
+# without sudo. No-op (guarded) for minimal images where docker isn't present.
+RUN if getent group docker >/dev/null 2>&1; then usermod -a -G docker jetson; fi
