@@ -1,0 +1,75 @@
+name: Build image (reusable)
+
+# Single source of truth for building a board image. Callers (manual dispatch,
+# PR validation, release) invoke this via `workflow_call` and only decide what
+# to do with the result (upload an artifact, attach to a release, or nothing).
+
+on:
+  workflow_call:
+    inputs:
+      board:
+        description: Board to build
+        type: string
+        required: true
+      compress:
+        description: Compress the image with xz before uploading
+        type: boolean
+        required: false
+        default: false
+      upload-artifact:
+        description: Upload the built image as a workflow artifact
+        type: boolean
+        required: false
+        default: false
+      retention-days:
+        description: Artifact retention in days (only when upload-artifact is true)
+        type: number
+        required: false
+        default: 7
+      release:
+        description: Attach the built image to the triggering release
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq qemu-user-static libxml2-utils xmlstarlet
+
+      - name: Build image for ${{ inputs.board }}
+        run: |
+          time sudo ./create-image.sh -b ${{ inputs.board }}
+          sudo chown "$USER:$USER" "${{ inputs.board }}.img"
+
+      - name: Compress image
+        if: ${{ inputs.compress }}
+        run: |
+          sudo xz -9 -T0 "${{ inputs.board }}.img"
+          sudo chown "$USER:$USER" "${{ inputs.board }}.img.xz"
+
+      - name: Report image size
+        run: ls -lh ${{ inputs.board }}.img*
+
+      - name: Upload image artifact
+        if: ${{ inputs.upload-artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.board }}
+          path: ${{ inputs.board }}.img*
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days }}
+
+      - name: Upload to release
+        if: ${{ inputs.release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ inputs.board }}.img*
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

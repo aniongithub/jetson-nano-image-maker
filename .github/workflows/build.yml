@@ -35,39 +35,14 @@ jobs:
           fi
           echo "matrix={\"board\":$matrix}" >> "$GITHUB_OUTPUT"
 
-  build-images:
-    runs-on: ubuntu-latest
+  build:
     needs: setup
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq qemu-user-static libxml2-utils xmlstarlet
-
-      - name: Build image for ${{ matrix.board }}
-        run: |
-          time sudo ./create-image.sh -b ${{ matrix.board }}
-          sudo chown "$USER:$USER" "${{ matrix.board }}.img"
-
-      - name: Compress image
-        if: ${{ inputs.compress }}
-        run: |
-          sudo xz -9 -T0 "${{ matrix.board }}.img"
-          sudo chown "$USER:$USER" "${{ matrix.board }}.img.xz"
-
-      - name: Report image size
-        run: ls -lh ${{ matrix.board }}.img*
-
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.board }}
-          path: ${{ matrix.board }}.img*
-          if-no-files-found: error
-          retention-days: 7
+    uses: ./.github/workflows/_build.yml
+    with:
+      board: ${{ matrix.board }}
+      compress: ${{ inputs.compress }}
+      upload-artifact: true
+      retention-days: 7

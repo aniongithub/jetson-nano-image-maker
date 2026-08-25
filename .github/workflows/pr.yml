@@ -27,8 +27,7 @@ jobs:
           bash -n build-rootfs.sh
           bash -n boards.sh
 
-  build-images:
-    runs-on: ubuntu-latest
+  build:
     needs: validate
     strategy:
       fail-fast: false
@@ -37,19 +36,6 @@ jobs:
           - jetson-nano
           - jetson-nano-2gb
           - jetson-orin-nano
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq qemu-user-static libxml2-utils xmlstarlet
-
-      - name: Build image for ${{ matrix.board }}
-        run: |
-          time sudo ./create-image.sh -b ${{ matrix.board }}
-          sudo chown $USER "${{ matrix.board }}.img"
-
-      - name: Report image size
-        run: ls -lh ${{ matrix.board }}.img
+    uses: ./.github/workflows/_build.yml
+    with:
+      board: ${{ matrix.board }}
